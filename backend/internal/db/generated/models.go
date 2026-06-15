@@ -22,7 +22,7 @@ type ProjectTopic struct {
 	ProjectID pgtype.UUID
 	Index     int32
 	Title     pgtype.Text
-	CreatedAt interface{}
+	CreatedAt pgtype.Timestamptz
 	ImageUrl  pgtype.Text
 	Color     string
 }
