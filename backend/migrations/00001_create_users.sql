@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS users(
+  id UUID NOT NULL,
+  email VARCHAR(128) NOT NULL UNIQUE,
+  email_verified BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY(id)
+);
