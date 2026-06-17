@@ -1,0 +1,116 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useProjectsStore } from '@/stores/projects'
+import AppButton from '@/components/AppButton.vue'
+
+defineProps<{ open: boolean }>()
+const emit = defineEmits<{ close: []; created: [] }>()
+
+const store = useProjectsStore()
+
+const PALETTE = [
+  '#7C6F8E',
+  '#6B8E7C',
+  '#8E7C6B',
+  '#6B7C8E',
+  '#8E6B7C',
+  '#7C8E6B',
+  '#8E8A6B',
+  '#6B8A8E',
+]
+
+const title = ref('')
+const selectedColor = ref<string>(PALETTE[0] ?? PALETTE[1] ?? '#7C6F8E')
+const submitting = ref(false)
+
+async function submit() {
+  if (!title.value.trim()) return
+  submitting.value = true
+  await store.create({ title: title.value.trim(), color: selectedColor.value })
+  submitting.value = false
+  title.value = ''
+  selectedColor.value = PALETTE[0] ?? '#7C6F8E'
+  emit('created')
+  emit('close')
+}
+
+function close() {
+  title.value = ''
+  selectedColor.value = PALETTE[0] ?? '#7C6F8E'
+  emit('close')
+}
+</script>
+
+<template>
+  <Teleport to="body">
+    <Transition name="modal">
+      <div
+        v-if="open"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        @click.self="close"
+      >
+        <div class="w-full max-w-sm rounded-2xl bg-zinc-900 p-6 shadow-2xl ring-1 ring-white/10">
+          <h2 class="mb-5 text-base font-semibold text-zinc-100">New project</h2>
+
+          <div class="mb-4">
+            <label class="mb-1.5 block text-xs font-medium text-zinc-400">Title</label>
+            <input
+              v-model="title"
+              type="text"
+              placeholder="Project name"
+              class="w-full rounded-lg bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none ring-1 ring-zinc-700 transition focus:ring-zinc-500"
+              @keydown.enter="submit"
+              @keydown.esc="close"
+            />
+          </div>
+
+          <div class="mb-6">
+            <label class="mb-2 block text-xs font-medium text-zinc-400">Color</label>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="color in PALETTE"
+                :key="color"
+                type="button"
+                class="h-7 w-7 rounded-full transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                :class="selectedColor === color ? 'scale-110 ring-2 ring-white/60' : 'hover:scale-105'"
+                :style="{ backgroundColor: color }"
+                @click="selectedColor = color"
+              />
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <AppButton variant="ghost" @click="close">Cancel</AppButton>
+            <AppButton
+              variant="primary"
+              :color="selectedColor"
+              :disabled="submitting || !title.trim()"
+              @click="submit"
+            >
+              {{ submitting ? 'Creating…' : 'Create' }}
+            </AppButton>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
+<style scoped>
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.15s ease;
+}
+.modal-enter-active > div,
+.modal-leave-active > div {
+  transition: transform 0.15s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+.modal-enter-from > div,
+.modal-leave-to > div {
+  transform: scale(0.97);
+}
+</style>

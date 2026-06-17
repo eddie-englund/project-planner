@@ -17,14 +17,34 @@ type Project struct {
 	ImageUrl  pgtype.Text
 }
 
+type ProjectStatus struct {
+	ID         pgtype.UUID
+	ProjectID  pgtype.UUID
+	Name       string
+	Color      string
+	Position   int32
+	IsTerminal bool
+	CreatedAt  pgtype.Timestamptz
+}
+
 type ProjectTopic struct {
 	ID        pgtype.UUID
 	ProjectID pgtype.UUID
 	Index     int32
-	Title     pgtype.Text
+	Title     string
 	CreatedAt pgtype.Timestamptz
 	ImageUrl  pgtype.Text
 	Color     string
+}
+
+type TopicTicket struct {
+	ID        pgtype.UUID
+	TopicID   pgtype.UUID
+	StatusID  pgtype.UUID
+	Title     string
+	Body      string
+	Urls      []string
+	CreatedAt pgtype.Timestamptz
 }
 
 type User struct {

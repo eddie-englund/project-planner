@@ -16,15 +16,15 @@ type ProjectHandler struct {
 }
 
 type createProjectRequest struct {
-	Title    string  `json:"title"     validate:"required"`
-	Color    string  `json:"color"     validate:"required"`
-	ImageURL *string `json:"image_url" validate:"omitempty"`
+	Title    string  `json:"title"    validate:"required"`
+	Color    string  `json:"color"    validate:"required"`
+	ImageURL *string `json:"imageUrl" validate:"omitempty"`
 }
 
 type updateProjectRequest struct {
-	Title    string  `json:"title"     validate:"required"`
-	Color    string  `json:"color"     validate:"required"`
-	ImageURL *string `json:"image_url" validate:"omitempty"`
+	Title    string  `json:"title"    validate:"required"`
+	Color    string  `json:"color"    validate:"required"`
+	ImageURL *string `json:"imageUrl" validate:"omitempty"`
 }
 
 func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +47,11 @@ func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, project)
+	if err := h.db.SeedDefaultStatuses(r.Context(), project.ID); err != nil {
+		h.logger.Error("seed default statuses", "error", err)
+	}
+
+	writeJSON(w, http.StatusCreated, projectToResponse(project))
 }
 
 func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -58,10 +62,11 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if projects == nil {
-		projects = []db.Project{}
+	resp := make([]ProjectResponse, len(projects))
+	for i, p := range projects {
+		resp[i] = projectToResponse(p)
 	}
-	writeJSON(w, http.StatusOK, projects)
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (h *ProjectHandler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +87,7 @@ func (h *ProjectHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, project)
+	writeJSON(w, http.StatusOK, projectToResponse(project))
 }
 
 func (h *ProjectHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -116,7 +121,7 @@ func (h *ProjectHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, project)
+	writeJSON(w, http.StatusOK, projectToResponse(project))
 }
 
 func (h *ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {

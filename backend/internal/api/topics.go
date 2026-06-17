@@ -17,16 +17,16 @@ type TopicHandler struct {
 
 type createTopicRequest struct {
 	Index    int32   `json:"index"`
-	Title    *string `json:"title"     validate:"omitempty"`
-	Color    string  `json:"color"     validate:"required"`
-	ImageURL *string `json:"image_url" validate:"omitempty"`
+	Title    string  `json:"title"    validate:"required"`
+	Color    string  `json:"color"    validate:"required"`
+	ImageURL *string `json:"imageUrl" validate:"omitempty"`
 }
 
 type updateTopicRequest struct {
 	Index    int32   `json:"index"`
-	Title    *string `json:"title"     validate:"omitempty"`
-	Color    string  `json:"color"     validate:"required"`
-	ImageURL *string `json:"image_url" validate:"omitempty"`
+	Title    string  `json:"title"    validate:"required"`
+	Color    string  `json:"color"    validate:"required"`
+	ImageURL *string `json:"imageUrl" validate:"omitempty"`
 }
 
 func parseProjectID(r *http.Request) (pgtype.UUID, error) {
@@ -51,7 +51,7 @@ func (h *TopicHandler) Create(w http.ResponseWriter, r *http.Request) {
 		ProjectID: projectID,
 		Index:     req.Index,
 		Color:     req.Color,
-		Title:     optText(req.Title),
+		Title:     req.Title,
 		ImageUrl:  optText(req.ImageURL),
 	}
 
@@ -62,7 +62,7 @@ func (h *TopicHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, topic)
+	writeJSON(w, http.StatusCreated, topicToResponse(topic))
 }
 
 func (h *TopicHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -79,10 +79,11 @@ func (h *TopicHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if topics == nil {
-		topics = []db.ProjectTopic{}
+	resp := make([]TopicResponse, len(topics))
+	for i, t := range topics {
+		resp[i] = topicToResponse(t)
 	}
-	writeJSON(w, http.StatusOK, topics)
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (h *TopicHandler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +113,7 @@ func (h *TopicHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, topic)
+	writeJSON(w, http.StatusOK, topicToResponse(topic))
 }
 
 func (h *TopicHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +133,7 @@ func (h *TopicHandler) Update(w http.ResponseWriter, r *http.Request) {
 		ID:       id,
 		Color:    req.Color,
 		Index:    req.Index,
-		Title:    optText(req.Title),
+		Title:    req.Title,
 		ImageUrl: optText(req.ImageURL),
 	}
 
@@ -147,7 +148,7 @@ func (h *TopicHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, topic)
+	writeJSON(w, http.StatusOK, topicToResponse(topic))
 }
 
 func (h *TopicHandler) Delete(w http.ResponseWriter, r *http.Request) {

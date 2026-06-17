@@ -20,7 +20,7 @@ RETURNING id, project_id, index, title, created_at, image_url, color
 type CreateProjectTopicParams struct {
 	ProjectID pgtype.UUID
 	Index     int32
-	Title     pgtype.Text
+	Title     string
 	Color     string
 	ImageUrl  pgtype.Text
 }
@@ -118,7 +118,7 @@ WHERE id = $1 RETURNING id, project_id, index, title, created_at, image_url, col
 
 type UpdateProjectTopicParams struct {
 	ID       pgtype.UUID
-	Title    pgtype.Text
+	Title    string
 	Color    string
 	ImageUrl pgtype.Text
 	Index    int32

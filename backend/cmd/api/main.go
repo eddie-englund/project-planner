@@ -32,7 +32,9 @@ func main() {
 
 	queries := db.New(pool)
 	router := api.NewRouter(logger, queries)
-	if err := http.ListenAndServe(":8080", router); err != nil {
+	addr := ":8080"
+	logger.Info("server listening", "addr", "http://localhost"+addr)
+	if err := http.ListenAndServe(addr, router); err != nil {
 		logger.Error("server error", "error", err)
 		os.Exit(1)
 	}

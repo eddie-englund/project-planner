@@ -13,5 +13,6 @@
   "editor.formatOnSaveMode": "file", // tell oxfmt to format the whole file, not only the modified lines
   "[golang]": {
     "editor.defaultFormatter": "golang.go"
-  }
+  },
+  "workbench.browser.enableChatTools": true
 }

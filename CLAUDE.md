@@ -40,6 +40,18 @@ docker compose -f ../docker/docker-compose.yaml up -d
 - `internal/db/generated/` — sqlc-generated Go code (do not edit manually)
 - `migrations/` — raw SQL migration files; also serve as the schema source for sqlc (`sqlc.yaml` points `schema` here)
 
+### Json
+
+Always defined camelCase json definitions like
+
+```go
+type createProjectRequest struct {
+	Title    string  `json:"title"     validate:"required"`
+	Color    string  `json:"color"     validate:"required"`
+	ImageURL *string `json:"image_url" validate:"omitempty"`
+}
+```
+
 ### Database
 
 PostgreSQL via pgx/v5. Connection credentials from environment (`.env`). Docker Compose config is at `docker/docker-compose.yaml` (postgres:18, db `app`, user/pass `postgres`).
@@ -95,6 +107,8 @@ Routes live in `src/pages/`. Convention:
 - Use `computed()` for derived state; avoid watchers unless reacting to external side effects
 - Keep components small and focused — one responsibility per component
 - Prefer `v-bind` shorthand (`:prop`) and `v-on` shorthand (`@event`)
+- Before writing a new `<button>`, use `AppButton` (`src/components/AppButton.vue`) with `variant="primary|ghost|secondary|outline"`. Only use raw `<button>` for highly specific UI with no shared pattern (color pickers, card tiles, icon-only utilities).
+- If the same markup appears in 2+ places, extract a component. Prefer extending an existing component over creating a new one.
 
 ### Pinia best practices
 
@@ -117,9 +131,9 @@ Routes live in `src/pages/`. Convention:
 **Always use `useApi` from `src/composables/useApi.ts`** for all HTTP requests unless the user specifies otherwise. It is a `createFetch` instance from `@vueuse/core` pre-configured with `VITE_API_BASE_URL`.
 
 ```ts
-import { useApi } from '@/composables/useApi'
+import { useApi } from "@/composables/useApi";
 
-const { data, error, isFetching } = useApi('/projects').json<Project[]>()
+const { data, error, isFetching } = useApi("/projects").json<Project[]>();
 ```
 
 - Base URL set via `VITE_API_BASE_URL` in `.env.local` (default: `http://localhost:8080`)
