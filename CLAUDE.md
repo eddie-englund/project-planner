@@ -56,7 +56,7 @@ Schema is read from `migrations/`, queries from `internal/db/queries/`. After ch
 
 ## Frontend (`frontend/`)
 
-Vue 3 + Vite + TypeScript + Pinia + Vue Router 5 (file-based routing).
+Vue 3 + Vite + TypeScript + Pinia + Vue Router 5 (file-based routing) + Tailwindcss.
 
 Commands run from `frontend/`:
 
@@ -71,16 +71,17 @@ pnpm test:e2e     # playwright
 
 Routes live in `src/pages/`. Convention:
 
-| File | Route |
-|------|-------|
-| `src/pages/index.vue` | `/` |
-| `src/pages/about.vue` | `/about` |
-| `src/pages/users/[id].vue` | `/users/:id` |
-| `src/pages/users/index.vue` | `/users` |
+| File                        | Route        |
+| --------------------------- | ------------ |
+| `src/pages/index.vue`       | `/`          |
+| `src/pages/about.vue`       | `/about`     |
+| `src/pages/users/[id].vue`  | `/users/:id` |
+| `src/pages/users/index.vue` | `/users`     |
 
 `typed-router.d.ts` is auto-generated on `pnpm dev` — do not edit manually. Router config is `src/router/index.ts`; routes import from `vue-router/auto-routes`.
 
 **Best practices:**
+
 - All new pages go in `src/pages/` — never add manual routes to `router/index.ts`
 - Use `<RouterView />` in layout components, not hardcoded page content
 - Nested routes → nested folders (e.g. `src/pages/projects/[id]/topics.vue`)
@@ -111,6 +112,21 @@ Routes live in `src/pages/`. Convention:
 - Keep API calls inside store actions, not in components
 - Use `storeToRefs()` when destructuring reactive state from a store
 
+### API calls
+
+**Always use `useApi` from `src/composables/useApi.ts`** for all HTTP requests unless the user specifies otherwise. It is a `createFetch` instance from `@vueuse/core` pre-configured with `VITE_API_BASE_URL`.
+
+```ts
+import { useApi } from '@/composables/useApi'
+
+const { data, error, isFetching } = useApi('/projects').json<Project[]>()
+```
+
+- Base URL set via `VITE_API_BASE_URL` in `.env.local` (default: `http://localhost:8080`)
+- Never use raw `fetch` or `axios` — always go through `useApi`
+- Invoke inside store actions, not directly in components
+
 ### UI changes
 
+**Always use tailwindcss unless explicitly allowed by the user**
 **Always invoke the `frontend-design` skill** before implementing any UI. Run `/frontend-design` and describe the feature — do not make visual/layout decisions without it.
