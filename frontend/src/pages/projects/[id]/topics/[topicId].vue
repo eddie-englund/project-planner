@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watchEffect } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useTitle } from '@vueuse/core'
 import { VueDraggable } from 'vue-draggable-plus'
@@ -11,10 +11,13 @@ import { useStatusesStore } from '@/stores/statuses'
 import TicketCard from '@/components/TicketCard.vue'
 import TicketDrawer from '@/components/TicketDrawer.vue'
 import NewTicketModal from '@/components/NewTicketModal.vue'
+import NewTopicModal from '@/components/NewTopicModal.vue'
 import AppButton from '@/components/AppButton.vue'
 import type { Ticket, Status } from '@/types/ticket'
+import type { Topic } from '@/types/topic'
 
 const route = useRoute('/projects/[id]/topics/[topicId]')
+const router = useRouter()
 const projectId = route.params.id
 const topicId = route.params.topicId
 
@@ -31,6 +34,9 @@ const topic = computed(() => topicsStore.items.find((t) => t.id === topicId))
 
 const showModal = ref(false)
 const drawerTicket = ref<Ticket | null>(null)
+const editingTopic = ref<Topic | null>(null)
+const confirmDeleteTopic = ref<{ deleting: boolean } | null>(null)
+const nextIndex = computed(() => topicsStore.items.length)
 
 useTitle(computed(() => topic.value?.title ?? 'Topic'))
 
@@ -68,6 +74,21 @@ function onDragEnd(event: { item: HTMLElement; to: HTMLElement; from: HTMLElemen
   ticketsStore.updateStatus(projectId, topicId, ticketId, newStatusId)
 }
 
+function openEditTopic() {
+  if (topic.value) editingTopic.value = topic.value
+}
+
+function closeTopicModal() {
+  editingTopic.value = null
+}
+
+async function doDeleteTopic() {
+  if (!confirmDeleteTopic.value) return
+  confirmDeleteTopic.value.deleting = true
+  await topicsStore.remove(projectId, topicId)
+  router.push(`/projects/${projectId}`)
+}
+
 onMounted(async () => {
   search.value = ''
   if (projectsStore.items.length === 0) await projectsStore.fetchAll()
@@ -102,6 +123,18 @@ onMounted(async () => {
           <p v-if="project" class="text-xs text-zinc-600">{{ project.title }}</p>
           <h1 class="truncate text-lg font-bold text-zinc-100">{{ topic?.title ?? 'Topic' }}</h1>
         </div>
+
+        <!-- Edit / Delete topic -->
+        <AppButton variant="icon-ghost" title="Edit topic" @click="openEditTopic">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+          </svg>
+        </AppButton>
+        <AppButton variant="icon-danger" title="Delete topic" @click="confirmDeleteTopic = { deleting: false }">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+          </svg>
+        </AppButton>
 
         <!-- Search -->
         <div class="flex items-center gap-2 rounded-xl bg-zinc-900 px-3 py-1.5 ring-1 ring-zinc-800 transition focus-within:ring-zinc-600 w-52">
@@ -238,5 +271,63 @@ onMounted(async () => {
       @close="showModal = false"
       @created="showModal = false"
     />
+    <NewTopicModal
+      :open="!!editingTopic"
+      :project-id="projectId"
+      :next-index="nextIndex"
+      :topic="editingTopic"
+      @close="closeTopicModal"
+      @updated="closeTopicModal"
+    />
+
+    <!-- Delete topic confirmation -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div
+          v-if="confirmDeleteTopic"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          @click.self="confirmDeleteTopic = null"
+        >
+          <div class="w-full max-w-xs rounded-2xl bg-zinc-900 p-6 shadow-2xl ring-1 ring-white/10">
+            <h2 class="mb-2 text-base font-semibold text-zinc-100">Delete topic?</h2>
+            <p class="mb-6 text-sm text-zinc-400">
+              "{{ topic?.title }}" and all its tickets will be permanently deleted.
+            </p>
+            <div class="flex justify-end gap-2">
+              <AppButton variant="ghost" :disabled="confirmDeleteTopic.deleting" @click="confirmDeleteTopic = null">
+                Cancel
+              </AppButton>
+              <AppButton
+                variant="primary"
+                color="#dc2626"
+                :disabled="confirmDeleteTopic.deleting"
+                @click="doDeleteTopic"
+              >
+                {{ confirmDeleteTopic.deleting ? 'Deleting…' : 'Delete' }}
+              </AppButton>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
+
+<style scoped>
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.15s ease;
+}
+.modal-enter-active > div,
+.modal-leave-active > div {
+  transition: transform 0.15s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+.modal-enter-from > div,
+.modal-leave-to > div {
+  transform: scale(0.97);
+}
+</style>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useProjectsStore } from '@/stores/projects'
 import AppButton from '@/components/AppButton.vue'
+import type { Project } from '@/types/project'
 
-defineProps<{ open: boolean }>()
-const emit = defineEmits<{ close: []; created: [] }>()
+const props = defineProps<{ open: boolean; project?: Project | null }>()
+const emit = defineEmits<{ close: []; created: []; updated: [] }>()
 
 const store = useProjectsStore()
 
@@ -20,18 +21,33 @@ const PALETTE = [
 ]
 
 const title = ref('')
-const selectedColor = ref<string>(PALETTE[0] ?? PALETTE[1] ?? '#7C6F8E')
+const selectedColor = ref<string>(PALETTE[0] ?? '#7C6F8E')
 const submitting = ref(false)
+
+watch(() => props.open, (isOpen) => {
+  if (isOpen && props.project) {
+    title.value = props.project.title
+    selectedColor.value = props.project.color
+  } else if (isOpen) {
+    title.value = ''
+    selectedColor.value = PALETTE[0] ?? '#7C6F8E'
+  }
+})
 
 async function submit() {
   if (!title.value.trim()) return
   submitting.value = true
-  await store.create({ title: title.value.trim(), color: selectedColor.value })
-  submitting.value = false
-  title.value = ''
-  selectedColor.value = PALETTE[0] ?? '#7C6F8E'
-  emit('created')
-  emit('close')
+  if (props.project) {
+    await store.update(props.project.id, { title: title.value.trim(), color: selectedColor.value })
+    submitting.value = false
+    emit('updated')
+    emit('close')
+  } else {
+    await store.create({ title: title.value.trim(), color: selectedColor.value })
+    submitting.value = false
+    emit('created')
+    emit('close')
+  }
 }
 
 function close() {
@@ -50,7 +66,9 @@ function close() {
         @click.self="close"
       >
         <div class="w-full max-w-sm rounded-2xl bg-zinc-900 p-6 shadow-2xl ring-1 ring-white/10">
-          <h2 class="mb-5 text-base font-semibold text-zinc-100">New project</h2>
+          <h2 class="mb-5 text-base font-semibold text-zinc-100">
+            {{ project ? 'Edit project' : 'New project' }}
+          </h2>
 
           <div class="mb-4">
             <label class="mb-1.5 block text-xs font-medium text-zinc-400">Title</label>
@@ -87,7 +105,7 @@ function close() {
               :disabled="submitting || !title.trim()"
               @click="submit"
             >
-              {{ submitting ? 'Creating…' : 'Create' }}
+              {{ submitting ? (project ? 'Saving…' : 'Creating…') : (project ? 'Save' : 'Create') }}
             </AppButton>
           </div>
         </div>

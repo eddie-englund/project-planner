@@ -11,7 +11,7 @@ import (
 )
 
 type TicketHandler struct {
-	db     *db.Queries
+	db     ticketStore
 	logger *slog.Logger
 }
 

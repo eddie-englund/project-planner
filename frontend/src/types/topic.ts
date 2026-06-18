@@ -13,3 +13,9 @@ export interface CreateTopicPayload {
   color: string
   index: number
 }
+
+export interface UpdateTopicPayload {
+  title: string
+  color: string
+  image_url?: string | null
+}

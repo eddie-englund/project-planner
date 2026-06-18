@@ -8,7 +8,10 @@ import { useProjectsStore } from '@/stores/projects'
 import TopicCard from '@/components/TopicCard.vue'
 import NewProjectCard from '@/components/NewProjectCard.vue'
 import NewTopicModal from '@/components/NewTopicModal.vue'
+import NewProjectModal from '@/components/NewProjectModal.vue'
 import AppButton from '@/components/AppButton.vue'
+import type { Topic } from '@/types/topic'
+import type { Project } from '@/types/project'
 
 const route = useRoute('/projects/[id]/')
 const router = useRouter()
@@ -21,6 +24,10 @@ const { filtered, search, items: topics, isLoading, error } = storeToRefs(topics
 const project = computed(() => projectsStore.items.find((p) => p.id === projectId))
 const nextIndex = computed(() => topics.value.length)
 const showModal = ref(false)
+const editingTopic = ref<Topic | null>(null)
+const confirmDelete = ref<{ topic: Topic; deleting: boolean } | null>(null)
+const editingProject = ref<Project | null>(null)
+const confirmDeleteProject = ref<{ deleting: boolean } | null>(null)
 
 useTitle(computed(() => project.value ? `${project.value.title} — Topics` : 'Project'))
 
@@ -29,6 +36,43 @@ onMounted(async () => {
   if (projectsStore.items.length === 0) await projectsStore.fetchAll()
   await topicsStore.fetchAll(projectId)
 })
+
+function openEdit(topic: Topic) {
+  editingTopic.value = topic
+  showModal.value = false
+}
+
+function openCreate() {
+  editingTopic.value = null
+  showModal.value = true
+}
+
+function closeModal() {
+  showModal.value = false
+  editingTopic.value = null
+}
+
+async function confirmDeleteTopic() {
+  if (!confirmDelete.value) return
+  confirmDelete.value.deleting = true
+  await topicsStore.remove(projectId, confirmDelete.value.topic.id)
+  confirmDelete.value = null
+}
+
+function openEditProject() {
+  if (project.value) editingProject.value = project.value
+}
+
+function closeProjectModal() {
+  editingProject.value = null
+}
+
+async function doDeleteProject() {
+  if (!confirmDeleteProject.value) return
+  confirmDeleteProject.value.deleting = true
+  await projectsStore.remove(projectId)
+  router.push('/')
+}
 </script>
 
 <template>
@@ -54,7 +98,17 @@ onMounted(async () => {
         <h1 class="flex-1 text-xl font-semibold text-zinc-200">
           {{ project?.title ?? 'Project' }}
         </h1>
-        <AppButton variant="secondary" @click="showModal = true">
+        <AppButton variant="icon-ghost" title="Edit project" @click="openEditProject">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+          </svg>
+        </AppButton>
+        <AppButton variant="icon-danger" title="Delete project" @click="confirmDeleteProject = { deleting: false }">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+          </svg>
+        </AppButton>
+        <AppButton variant="secondary" @click="openCreate">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
@@ -100,7 +154,7 @@ onMounted(async () => {
         <div v-else-if="filtered.length === 0" class="flex flex-col items-center justify-center py-24 text-center">
           <p class="mb-1 text-sm font-medium text-zinc-400">No topics yet</p>
           <p class="mb-6 text-xs text-zinc-600">Break this project into topics to get started</p>
-          <AppButton variant="outline" @click="showModal = true">Add first topic</AppButton>
+          <AppButton variant="outline" @click="openCreate">Add first topic</AppButton>
         </div>
 
         <!-- Grid -->
@@ -112,18 +166,110 @@ onMounted(async () => {
             class="animate-fade-up"
             :style="{ '--delay': `${Math.min(i * 40, 300)}ms` }"
             @click="router.push(`/projects/${projectId}/topics/${topic.id}`)"
+            @edit="openEdit(topic)"
+            @delete="confirmDelete = { topic, deleting: false }"
           />
-          <NewProjectCard v-if="!search" aspect="landscape" @click="showModal = true" />
+          <NewProjectCard v-if="!search" aspect="landscape" @click="openCreate" />
         </div>
       </template>
     </div>
 
     <NewTopicModal
-      :open="showModal"
+      :open="showModal || !!editingTopic"
       :project-id="projectId"
       :next-index="nextIndex"
-      @close="showModal = false"
-      @created="showModal = false"
+      :topic="editingTopic"
+      @close="closeModal"
+      @created="closeModal"
+      @updated="closeModal"
     />
+
+    <NewProjectModal
+      :open="!!editingProject"
+      :project="editingProject"
+      @close="closeProjectModal"
+      @updated="closeProjectModal"
+    />
+
+    <!-- Delete project confirmation -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div
+          v-if="confirmDeleteProject"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          @click.self="confirmDeleteProject = null"
+        >
+          <div class="w-full max-w-xs rounded-2xl bg-zinc-900 p-6 shadow-2xl ring-1 ring-white/10">
+            <h2 class="mb-2 text-base font-semibold text-zinc-100">Delete project?</h2>
+            <p class="mb-6 text-sm text-zinc-400">
+              "{{ project?.title }}" and all its topics will be permanently deleted.
+            </p>
+            <div class="flex justify-end gap-2">
+              <AppButton variant="ghost" :disabled="confirmDeleteProject.deleting" @click="confirmDeleteProject = null">
+                Cancel
+              </AppButton>
+              <AppButton
+                variant="primary"
+                color="#dc2626"
+                :disabled="confirmDeleteProject.deleting"
+                @click="doDeleteProject"
+              >
+                {{ confirmDeleteProject.deleting ? 'Deleting…' : 'Delete' }}
+              </AppButton>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Delete topic confirmation -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div
+          v-if="confirmDelete"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          @click.self="confirmDelete = null"
+        >
+          <div class="w-full max-w-xs rounded-2xl bg-zinc-900 p-6 shadow-2xl ring-1 ring-white/10">
+            <h2 class="mb-2 text-base font-semibold text-zinc-100">Delete topic?</h2>
+            <p class="mb-6 text-sm text-zinc-400">
+              "{{ confirmDelete.topic.title }}" will be permanently deleted.
+            </p>
+            <div class="flex justify-end gap-2">
+              <AppButton variant="ghost" :disabled="confirmDelete.deleting" @click="confirmDelete = null">
+                Cancel
+              </AppButton>
+              <AppButton
+                variant="primary"
+                color="#dc2626"
+                :disabled="confirmDelete.deleting"
+                @click="confirmDeleteTopic"
+              >
+                {{ confirmDelete.deleting ? 'Deleting…' : 'Delete' }}
+              </AppButton>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
+
+<style scoped>
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.15s ease;
+}
+.modal-enter-active > div,
+.modal-leave-active > div {
+  transition: transform 0.15s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+.modal-enter-from > div,
+.modal-leave-to > div {
+  transform: scale(0.97);
+}
+</style>

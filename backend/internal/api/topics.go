@@ -11,7 +11,7 @@ import (
 )
 
 type TopicHandler struct {
-	db     *db.Queries
+	db     topicStore
 	logger *slog.Logger
 }
 

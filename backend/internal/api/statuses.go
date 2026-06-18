@@ -9,7 +9,7 @@ import (
 )
 
 type StatusHandler struct {
-	db     *db.Queries
+	db     statusStore
 	logger *slog.Logger
 }
 
@@ -32,6 +32,19 @@ func (h *StatusHandler) List(w http.ResponseWriter, r *http.Request) {
 		h.logger.Error("list statuses", "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
+	}
+
+	if len(statuses) == 0 {
+		if seedErr := h.db.SeedDefaultStatuses(r.Context(), projectID); seedErr != nil {
+			h.logger.Error("seed default statuses", "error", seedErr)
+		} else {
+			statuses, err = h.db.ListProjectStatuses(r.Context(), projectID)
+			if err != nil {
+				h.logger.Error("list statuses after seed", "error", err)
+				http.Error(w, "internal server error", http.StatusInternalServerError)
+				return
+			}
+		}
 	}
 
 	resp := make([]StatusResponse, len(statuses))

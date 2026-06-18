@@ -11,7 +11,7 @@ import (
 )
 
 type ProjectHandler struct {
-	db     *db.Queries
+	db     projectStore
 	logger *slog.Logger
 }
 

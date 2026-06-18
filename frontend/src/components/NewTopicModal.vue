@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { useTopicsStore } from "@/stores/topics";
 import AppButton from "@/components/AppButton.vue";
+import type { Topic } from "@/types/topic";
 
-const props = defineProps<{ open: boolean; projectId: string; nextIndex: number }>();
-const emit = defineEmits<{ close: []; created: [] }>();
+const props = defineProps<{ open: boolean; projectId: string; nextIndex: number; topic?: Topic | null }>();
+const emit = defineEmits<{ close: []; created: []; updated: [] }>();
 
 const store = useTopicsStore();
 
@@ -23,19 +24,37 @@ const title = ref("");
 const selectedColor = ref<string>(PALETTE[0] ?? "#7C6F8E");
 const submitting = ref(false);
 
+watch(() => props.open, (isOpen) => {
+  if (isOpen && props.topic) {
+    title.value = props.topic.title;
+    selectedColor.value = props.topic.color;
+  } else if (isOpen) {
+    title.value = "";
+    selectedColor.value = PALETTE[0] ?? "#7C6F8E";
+  }
+});
+
 async function submit() {
   if (!title.value.trim()) return;
   submitting.value = true;
-  await store.create(props.projectId, {
-    title: title.value.trim(),
-    color: selectedColor.value,
-    index: props.nextIndex,
-  });
-  submitting.value = false;
-  title.value = "";
-  selectedColor.value = PALETTE[0] ?? "#7C6F8E";
-  emit("created");
-  emit("close");
+  if (props.topic) {
+    await store.update(props.projectId, props.topic.id, {
+      title: title.value.trim(),
+      color: selectedColor.value,
+    });
+    submitting.value = false;
+    emit("updated");
+    emit("close");
+  } else {
+    await store.create(props.projectId, {
+      title: title.value.trim(),
+      color: selectedColor.value,
+      index: props.nextIndex,
+    });
+    submitting.value = false;
+    emit("created");
+    emit("close");
+  }
 }
 
 function close() {
@@ -54,7 +73,9 @@ function close() {
         @click.self="close"
       >
         <div class="w-full max-w-sm rounded-2xl bg-zinc-900 p-6 shadow-2xl ring-1 ring-white/10">
-          <h2 class="mb-5 text-base font-semibold text-zinc-100">New topic</h2>
+          <h2 class="mb-5 text-base font-semibold text-zinc-100">
+            {{ topic ? 'Edit topic' : 'New topic' }}
+          </h2>
 
           <div class="mb-4">
             <label class="mb-1.5 block text-xs font-medium text-zinc-400">Title</label>
@@ -93,7 +114,7 @@ function close() {
               :disabled="submitting || !title.trim()"
               @click="submit"
             >
-              {{ submitting ? "Creating…" : "Create" }}
+              {{ submitting ? (topic ? 'Saving…' : 'Creating…') : (topic ? 'Save' : 'Create') }}
             </AppButton>
           </div>
         </div>
