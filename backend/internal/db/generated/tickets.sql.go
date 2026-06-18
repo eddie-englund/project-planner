@@ -79,6 +79,65 @@ func (q *Queries) GetTicketByID(ctx context.Context, arg GetTicketByIDParams) (T
 	return i, err
 }
 
+const listTicketsByProject = `-- name: ListTicketsByProject :many
+SELECT
+  tt.id,
+  tt.topic_id,
+  tt.status_id,
+  tt.title,
+  tt.body,
+  tt.urls,
+  tt.created_at,
+  pt.color AS topic_color,
+  pt.title AS topic_title
+FROM topic_tickets tt
+JOIN project_topics pt ON tt.topic_id = pt.id
+WHERE pt.project_id = $1
+ORDER BY tt.created_at ASC
+`
+
+type ListTicketsByProjectRow struct {
+	ID         pgtype.UUID
+	TopicID    pgtype.UUID
+	StatusID   pgtype.UUID
+	Title      string
+	Body       string
+	Urls       []string
+	CreatedAt  pgtype.Timestamptz
+	TopicColor string
+	TopicTitle string
+}
+
+func (q *Queries) ListTicketsByProject(ctx context.Context, projectID pgtype.UUID) ([]ListTicketsByProjectRow, error) {
+	rows, err := q.db.Query(ctx, listTicketsByProject, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTicketsByProjectRow
+	for rows.Next() {
+		var i ListTicketsByProjectRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TopicID,
+			&i.StatusID,
+			&i.Title,
+			&i.Body,
+			&i.Urls,
+			&i.CreatedAt,
+			&i.TopicColor,
+			&i.TopicTitle,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTicketsByTopic = `-- name: ListTicketsByTopic :many
 SELECT id, topic_id, status_id, title, body, urls, created_at FROM topic_tickets WHERE topic_id = $1 ORDER BY created_at ASC
 `

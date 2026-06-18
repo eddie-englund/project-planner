@@ -1,11 +1,13 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
-import type { Ticket, CreateTicketPayload } from '@/types/ticket'
+import type { Ticket, TicketWithTopic, CreateTicketPayload } from '@/types/ticket'
 
 export const useTicketsStore = defineStore('tickets', () => {
   const items = ref<Ticket[]>([])
+  const projectItems = ref<TicketWithTopic[]>([])
   const isLoading = ref(false)
+  const isLoadingProject = ref(false)
   const error = ref<string | null>(null)
   const search = ref('')
   const sort = ref<'newest' | 'oldest' | 'alpha'>('newest')
@@ -39,6 +41,18 @@ export const useTicketsStore = defineStore('tickets', () => {
     items.value = data.value ?? []
   }
 
+  async function fetchAllByProject(projectId: string) {
+    isLoadingProject.value = true
+    error.value = null
+    const { data, error: err } = await useApi(`/projects/${projectId}/tickets`).json<TicketWithTopic[]>()
+    isLoadingProject.value = false
+    if (err.value) {
+      error.value = 'Failed to load tickets'
+      return
+    }
+    projectItems.value = data.value ?? []
+  }
+
   async function create(projectId: string, topicId: string, payload: CreateTicketPayload) {
     const { data, error: err } = await useApi(
       `/projects/${projectId}/topics/${topicId}/tickets`
@@ -69,6 +83,13 @@ export const useTicketsStore = defineStore('tickets', () => {
     if (err.value || !data.value) throw new Error('Failed to update ticket')
     const idx = items.value.findIndex((t) => t.id === ticketId)
     if (idx !== -1) items.value[idx] = data.value
+    const pidx = projectItems.value.findIndex((t) => t.id === ticketId)
+    if (pidx !== -1) {
+      const existing = projectItems.value[pidx]
+      if (existing) {
+        projectItems.value[pidx] = { ...data.value, topicColor: existing.topicColor, topicTitle: existing.topicTitle }
+      }
+    }
     return data.value
   }
 
@@ -81,5 +102,5 @@ export const useTicketsStore = defineStore('tickets', () => {
     return update(projectId, topicId, ticketId, { statusId })
   }
 
-  return { items, isLoading, error, search, sort, ticketsForStatus, fetchAll, create, update, updateStatus }
+  return { items, projectItems, isLoading, isLoadingProject, error, search, sort, ticketsForStatus, fetchAll, fetchAllByProject, create, update, updateStatus }
 })

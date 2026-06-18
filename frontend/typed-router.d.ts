@@ -45,6 +45,13 @@ declare module 'vue-router/auto-routes' {
       { id: ParamValue<false> },
       | never
     >,
+    '/projects/[id]/topics/': RouteRecordInfo<
+      '/projects/[id]/topics/',
+      '/projects/:id/topics',
+      { id: ParamValue<true> },
+      { id: ParamValue<false> },
+      | never
+    >,
     '/projects/[id]/topics/[topicId]': RouteRecordInfo<
       '/projects/[id]/topics/[topicId]',
       '/projects/:id/topics/:topicId',
@@ -76,6 +83,14 @@ declare module 'vue-router/auto-routes' {
     'src/pages/projects/[id]/index.vue': {
       routes:
         | '/projects/[id]/'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/projects/[id]/topics/index.vue': {
+      routes:
+        | '/projects/[id]/topics/'
       views:
         | never
       pathParamNames:

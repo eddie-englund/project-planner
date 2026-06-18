@@ -163,6 +163,27 @@ func (h *TicketHandler) Update(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ticketToResponse(ticket))
 }
 
+func (h *TicketHandler) ListByProject(w http.ResponseWriter, r *http.Request) {
+	var projectID pgtype.UUID
+	if err := projectID.Scan(r.PathValue("projectId")); err != nil {
+		http.Error(w, "invalid project id", http.StatusBadRequest)
+		return
+	}
+
+	tickets, err := h.db.ListTicketsByProject(r.Context(), projectID)
+	if err != nil {
+		h.logger.Error("list tickets by project", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	resp := make([]TicketWithTopicResponse, len(tickets))
+	for i, t := range tickets {
+		resp[i] = ticketWithTopicToResponse(t)
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
 func (h *TicketHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	var id pgtype.UUID
 	if err := id.Scan(r.PathValue("id")); err != nil {

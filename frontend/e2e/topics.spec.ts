@@ -36,7 +36,7 @@ test.describe('Project topics page', () => {
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(topics) })
     })
 
-    await page.goto('/projects/p1')
+    await page.goto('/projects/p1/topics')
     await expect(page.getByText('Alpha')).toBeVisible()
     await expect(page.getByText('Frontend')).toBeVisible()
     await expect(page.getByText('Backend')).toBeVisible()
@@ -55,7 +55,7 @@ test.describe('Project topics page', () => {
       route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
     })
 
-    await page.goto('/projects/p1')
+    await page.goto('/projects/p1/topics')
     await expect(page.getByText('No topics yet')).toBeVisible()
   })
 
@@ -73,7 +73,7 @@ test.describe('Project topics page', () => {
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(topics) })
     })
 
-    await page.goto('/projects/p1')
+    await page.goto('/projects/p1/topics')
     await page.getByPlaceholder('Filter topics…').fill('front')
     await expect(page.getByText('Frontend')).toBeVisible()
     await expect(page.getByText('Backend')).not.toBeVisible()

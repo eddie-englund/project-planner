@@ -46,6 +46,7 @@ func NewRouter(logger *slog.Logger, queries *db.Queries) http.Handler {
 	mux.HandleFunc("POST /projects/{projectId}/statuses", sh.Create)
 
 	tkh := &TicketHandler{db: queries, logger: logger}
+	mux.HandleFunc("GET /projects/{projectId}/tickets", tkh.ListByProject)
 	mux.HandleFunc("POST /projects/{projectId}/topics/{topicId}/tickets", tkh.Create)
 	mux.HandleFunc("GET /projects/{projectId}/topics/{topicId}/tickets", tkh.List)
 	mux.HandleFunc("GET /projects/{projectId}/topics/{topicId}/tickets/{id}", tkh.GetByID)

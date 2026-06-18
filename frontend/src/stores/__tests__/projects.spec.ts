@@ -78,7 +78,7 @@ describe('useProjectsStore', () => {
       const store = useProjectsStore()
       store.items = [project1, project2]
       await store.update('p1', { title: 'Alpha Updated', color: '#aaa' })
-      expect(store.items[0].title).toBe('Alpha Updated')
+      expect(store.items[0]?.title).toBe('Alpha Updated')
       expect(store.items[1]).toEqual(project2)
     })
   })

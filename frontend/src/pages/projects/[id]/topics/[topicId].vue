@@ -111,7 +111,7 @@ onMounted(async () => {
         <!-- Back -->
         <RouterLink
           :to="`/projects/${projectId}`"
-          class="flex items-center justify-center rounded-lg p-1.5 text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-200"
+          class="flex cursor-pointer items-center justify-center rounded-lg p-1.5 text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-200"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -147,7 +147,7 @@ onMounted(async () => {
             placeholder="Search tickets…"
             class="w-full bg-transparent text-xs text-zinc-100 placeholder-zinc-500 outline-none"
           />
-          <button v-if="search" class="shrink-0 text-zinc-500 hover:text-zinc-300 transition" @click="search = ''">
+          <button v-if="search" class="shrink-0 cursor-pointer text-zinc-500 hover:text-zinc-300 transition" @click="search = ''">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>

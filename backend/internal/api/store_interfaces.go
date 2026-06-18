@@ -33,6 +33,7 @@ type statusStore interface {
 type ticketStore interface {
 	CreateTicket(ctx context.Context, arg db.CreateTicketParams) (db.TopicTicket, error)
 	ListTicketsByTopic(ctx context.Context, topicID pgtype.UUID) ([]db.TopicTicket, error)
+	ListTicketsByProject(ctx context.Context, projectID pgtype.UUID) ([]db.ListTicketsByProjectRow, error)
 	GetTicketByID(ctx context.Context, arg db.GetTicketByIDParams) (db.TopicTicket, error)
 	UpdateTicket(ctx context.Context, arg db.UpdateTicketParams) (db.TopicTicket, error)
 	DeleteTicket(ctx context.Context, id pgtype.UUID) error

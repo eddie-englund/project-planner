@@ -77,7 +77,7 @@ describe('useTopicsStore', () => {
       const store = useTopicsStore()
       store.items = [topic1, topic2]
       await store.update('p1', 't1', { title: 'Frontend v2', color: '#abc' })
-      expect(store.items[0].title).toBe('Frontend v2')
+      expect(store.items[0]?.title).toBe('Frontend v2')
       expect(store.items[1]).toEqual(topic2)
     })
   })

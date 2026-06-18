@@ -99,6 +99,41 @@ func ticketToResponse(t db.TopicTicket) TicketResponse {
 	}
 }
 
+type TicketWithTopicResponse struct {
+	ID         string   `json:"id"`
+	TopicID    string   `json:"topicId"`
+	TopicColor string   `json:"topicColor"`
+	TopicTitle string   `json:"topicTitle"`
+	StatusID   *string  `json:"statusId"`
+	Title      string   `json:"title"`
+	Body       string   `json:"body"`
+	URLs       []string `json:"urls"`
+	CreatedAt  string   `json:"createdAt"`
+}
+
+func ticketWithTopicToResponse(t db.ListTicketsByProjectRow) TicketWithTopicResponse {
+	var statusID *string
+	if t.StatusID.Valid {
+		s := uuidToString(t.StatusID)
+		statusID = &s
+	}
+	urls := t.Urls
+	if urls == nil {
+		urls = []string{}
+	}
+	return TicketWithTopicResponse{
+		ID:         uuidToString(t.ID),
+		TopicID:    uuidToString(t.TopicID),
+		TopicColor: t.TopicColor,
+		TopicTitle: t.TopicTitle,
+		StatusID:   statusID,
+		Title:      t.Title,
+		Body:       t.Body,
+		URLs:       urls,
+		CreatedAt:  t.CreatedAt.Time.Format(time.RFC3339),
+	}
+}
+
 func projectToResponse(p db.Project) ProjectResponse {
 	var imageUrl *string
 	if p.ImageUrl.Valid {

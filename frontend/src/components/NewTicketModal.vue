@@ -122,7 +122,7 @@ watch(
               <label class="text-xs font-medium text-zinc-400">Links <span class="text-zinc-600">(optional)</span></label>
               <button
                 type="button"
-                class="text-xs text-zinc-500 transition hover:text-zinc-300"
+                class="cursor-pointer text-xs text-zinc-500 transition hover:text-zinc-300"
                 @click="addUrl"
               >
                 + Add link
@@ -138,7 +138,7 @@ watch(
                 />
                 <button
                   type="button"
-                  class="shrink-0 text-zinc-600 transition hover:text-zinc-400"
+                  class="shrink-0 cursor-pointer text-zinc-600 transition hover:text-zinc-400"
                   @click="removeUrl(i)"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

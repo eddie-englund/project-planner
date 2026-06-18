@@ -17,9 +17,10 @@ import (
 )
 
 type mockTicketStore struct {
-	ticket  db.TopicTicket
-	tickets []db.TopicTicket
-	err     error
+	ticket         db.TopicTicket
+	tickets        []db.TopicTicket
+	projectTickets []db.ListTicketsByProjectRow
+	err            error
 }
 
 func (m *mockTicketStore) CreateTicket(_ context.Context, _ db.CreateTicketParams) (db.TopicTicket, error) {
@@ -27,6 +28,9 @@ func (m *mockTicketStore) CreateTicket(_ context.Context, _ db.CreateTicketParam
 }
 func (m *mockTicketStore) ListTicketsByTopic(_ context.Context, _ pgtype.UUID) ([]db.TopicTicket, error) {
 	return m.tickets, m.err
+}
+func (m *mockTicketStore) ListTicketsByProject(_ context.Context, _ pgtype.UUID) ([]db.ListTicketsByProjectRow, error) {
+	return m.projectTickets, m.err
 }
 func (m *mockTicketStore) GetTicketByID(_ context.Context, _ db.GetTicketByIDParams) (db.TopicTicket, error) {
 	return m.ticket, m.err
@@ -169,4 +173,43 @@ func TestTicketHandler_Delete_Success_Returns204(t *testing.T) {
 	h.Delete(w, req)
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
+}
+
+func TestTicketHandler_ListByProject_ReturnsTickets(t *testing.T) {
+	mock := &mockTicketStore{projectTickets: []db.ListTicketsByProjectRow{
+		{Title: "Fix bug", TopicColor: "#10b981", TopicTitle: "Backend", Urls: []string{}},
+		{Title: "Design UI", TopicColor: "#3b82f6", TopicTitle: "Frontend", Urls: []string{}},
+	}}
+	h := newTestTicketHandler(mock)
+
+	req := ticketReq(http.MethodGet, "/", "", map[string]string{"projectId": validProjectID})
+	w := httptest.NewRecorder()
+	h.ListByProject(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "Fix bug")
+	assert.Contains(t, w.Body.String(), "#10b981")
+	assert.Contains(t, w.Body.String(), "Backend")
+}
+
+func TestTicketHandler_ListByProject_DBError_Returns500(t *testing.T) {
+	mock := &mockTicketStore{err: errors.New("db error")}
+	h := newTestTicketHandler(mock)
+
+	req := ticketReq(http.MethodGet, "/", "", map[string]string{"projectId": validProjectID})
+	w := httptest.NewRecorder()
+	h.ListByProject(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestTicketHandler_ListByProject_InvalidProjectID_Returns400(t *testing.T) {
+	mock := &mockTicketStore{}
+	h := newTestTicketHandler(mock)
+
+	req := ticketReq(http.MethodGet, "/", "", map[string]string{"projectId": "not-a-uuid"})
+	w := httptest.NewRecorder()
+	h.ListByProject(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }

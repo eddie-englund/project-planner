@@ -17,6 +17,11 @@ export interface Ticket {
   createdAt: string
 }
 
+export interface TicketWithTopic extends Ticket {
+  topicColor: string
+  topicTitle: string
+}
+
 export interface CreateTicketPayload {
   title: string
   body: string

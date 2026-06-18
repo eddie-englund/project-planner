@@ -15,3 +15,19 @@ WHERE id = $1 RETURNING *;
 
 -- name: DeleteTicket :exec
 DELETE FROM topic_tickets WHERE id = $1;
+
+-- name: ListTicketsByProject :many
+SELECT
+  tt.id,
+  tt.topic_id,
+  tt.status_id,
+  tt.title,
+  tt.body,
+  tt.urls,
+  tt.created_at,
+  pt.color AS topic_color,
+  pt.title AS topic_title
+FROM topic_tickets tt
+JOIN project_topics pt ON tt.topic_id = pt.id
+WHERE pt.project_id = $1
+ORDER BY tt.created_at ASC;

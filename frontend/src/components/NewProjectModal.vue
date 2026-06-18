@@ -89,7 +89,7 @@ function close() {
                 v-for="color in PALETTE"
                 :key="color"
                 type="button"
-                class="h-7 w-7 rounded-full transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                class="h-7 w-7 cursor-pointer rounded-full transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                 :class="selectedColor === color ? 'scale-110 ring-2 ring-white/60' : 'hover:scale-105'"
                 :style="{ backgroundColor: color }"
                 @click="selectedColor = color"

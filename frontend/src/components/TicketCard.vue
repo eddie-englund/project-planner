@@ -5,6 +5,8 @@ const props = defineProps<{
   ticket: Ticket
   status?: Status
   muted?: boolean
+  topicColor?: string
+  topicTitle?: string
 }>()
 
 defineEmits<{ click: [] }>()
@@ -57,6 +59,11 @@ defineEmits<{ click: [] }>()
         </svg>
         <span class="truncate">{{ url }}</span>
       </a>
+    </div>
+
+    <div v-if="topicColor && topicTitle" class="mt-2 flex items-center gap-1.5">
+      <span class="h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: topicColor }" />
+      <span class="truncate text-xs text-zinc-500">{{ topicTitle }}</span>
     </div>
   </div>
 </template>
