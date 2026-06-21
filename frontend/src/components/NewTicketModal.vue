@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useTicketsStore } from '@/stores/tickets'
 import AppButton from '@/components/AppButton.vue'
 import type { Status } from '@/types/ticket'
+import type { Topic } from '@/types/topic'
 
 const props = defineProps<{
   open: boolean
   projectId: string
-  topicId: string
+  topicId?: string
+  topics?: Topic[]
   statuses: Status[]
+  defaultStatusId?: string
 }>()
 const emit = defineEmits<{ close: []; created: [] }>()
 
@@ -18,6 +21,7 @@ const title = ref('')
 const body = ref('')
 const urls = ref<string[]>([])
 const selectedStatusId = ref<string>('')
+const selectedTopicId = ref<string>('')
 const submitting = ref(false)
 
 function addUrl() {
@@ -29,9 +33,10 @@ function removeUrl(i: number) {
 }
 
 async function submit() {
-  if (!title.value.trim()) return
+  const topicId = props.topicId || selectedTopicId.value
+  if (!title.value.trim() || !topicId) return
   submitting.value = true
-  await store.create(props.projectId, props.topicId, {
+  await store.create(props.projectId, topicId, {
     title: title.value.trim(),
     body: body.value.trim(),
     urls: urls.value.filter((u) => u.trim()),
@@ -47,7 +52,8 @@ function reset() {
   title.value = ''
   body.value = ''
   urls.value = []
-  selectedStatusId.value = props.statuses[0]?.id ?? ''
+  selectedTopicId.value = ''
+  selectedStatusId.value = props.defaultStatusId ?? props.statuses[0]?.id ?? ''
 }
 
 function close() {
@@ -55,12 +61,20 @@ function close() {
   emit('close')
 }
 
-// set default status when statuses load
-import { watch } from 'vue'
 watch(
   () => props.statuses,
-  (s) => { if (s.length > 0 && !selectedStatusId.value) selectedStatusId.value = s[0]?.id ?? '' },
+  (s) => { if (s.length > 0 && !selectedStatusId.value) selectedStatusId.value = props.defaultStatusId ?? s[0]?.id ?? '' },
   { immediate: true }
+)
+
+watch(
+  () => props.defaultStatusId,
+  (id) => { if (id) selectedStatusId.value = id },
+)
+
+watch(
+  () => props.open,
+  (open) => { if (open) selectedStatusId.value = props.defaultStatusId ?? props.statuses[0]?.id ?? '' }
 )
 </script>
 
@@ -74,6 +88,18 @@ watch(
       >
         <div class="w-full max-w-2xl rounded-2xl bg-zinc-900 p-6 shadow-2xl ring-1 ring-white/10">
           <h2 class="mb-5 text-base font-semibold text-zinc-100">New ticket</h2>
+
+          <!-- Topic picker (only when topicId not provided by parent) -->
+          <div v-if="!props.topicId && props.topics?.length" class="mb-4">
+            <label class="mb-1.5 block text-xs font-medium text-zinc-400">Topic</label>
+            <select
+              v-model="selectedTopicId"
+              class="w-full cursor-pointer rounded-lg bg-zinc-800 px-3 py-2.5 text-sm text-zinc-100 outline-none ring-1 ring-zinc-700 transition focus:ring-zinc-500"
+            >
+              <option value="" disabled>Select a topic…</option>
+              <option v-for="t in props.topics" :key="t.id" :value="t.id">{{ t.title }}</option>
+            </select>
+          </div>
 
           <!-- Title -->
           <div class="mb-4">
@@ -153,7 +179,7 @@ watch(
             <AppButton variant="ghost" @click="close">Cancel</AppButton>
             <AppButton
               variant="secondary"
-              :disabled="submitting || !title.trim()"
+              :disabled="submitting || !title.trim() || (!props.topicId && !selectedTopicId)"
               @click="submit"
             >
               {{ submitting ? 'Creating…' : 'Create ticket' }}

@@ -11,6 +11,7 @@ import { useStatusesStore } from '@/stores/statuses'
 import TicketCard from '@/components/TicketCard.vue'
 import TicketDrawer from '@/components/TicketDrawer.vue'
 import NewProjectModal from '@/components/NewProjectModal.vue'
+import NewTicketModal from '@/components/NewTicketModal.vue'
 import AppButton from '@/components/AppButton.vue'
 import type { TicketWithTopic, Status } from '@/types/ticket'
 import type { Project } from '@/types/project'
@@ -35,6 +36,8 @@ const activeTopicIds = ref<string[]>([])
 const drawerTicket = ref<TicketWithTopic | null>(null)
 const editingProject = ref<Project | null>(null)
 const confirmDeleteProject = ref<{ deleting: boolean } | null>(null)
+const showNewTicketModal = ref(false)
+const newTicketDefaultStatusId = ref<string | undefined>(undefined)
 
 useTitle(computed(() => project.value ? `${project.value.title} — Kanban` : 'Kanban'))
 
@@ -100,6 +103,11 @@ function openEditProject() {
 
 function closeProjectModal() {
   editingProject.value = null
+}
+
+async function onTicketCreated() {
+  showNewTicketModal.value = false
+  await ticketsStore.fetchAllByProject(projectId)
 }
 
 async function doDeleteProject() {
@@ -169,6 +177,14 @@ onMounted(async () => {
           </button>
         </div>
 
+        <!-- New ticket CTA -->
+        <AppButton
+          variant="secondary"
+          @click="newTicketDefaultStatusId = undefined; showNewTicketModal = true"
+        >
+          + New ticket
+        </AppButton>
+
         <!-- View toggle -->
         <div class="flex rounded-xl bg-zinc-900 p-0.5 ring-1 ring-zinc-800 text-xs font-medium">
           <span class="rounded-lg px-3 py-1.5 bg-zinc-800 text-zinc-200">Kanban</span>
@@ -182,7 +198,7 @@ onMounted(async () => {
       </div>
 
       <!-- Topic filter chips -->
-      <div v-if="topics.length > 0" class="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
+      <div v-if="topics.length > 0" class="mt-3 flex items-center gap-2 overflow-x-auto py-1">
         <button
           class="shrink-0 cursor-pointer rounded-lg px-3 py-1 text-xs font-medium transition"
           :class="activeTopicIds.length === 0 ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 ring-1 ring-zinc-800'"
@@ -271,13 +287,15 @@ onMounted(async () => {
             />
           </VueDraggable>
 
-          <!-- Empty column placeholder -->
-          <div
-            v-if="!columnTickets[col.id ?? 'null']?.length"
-            class="rounded-lg border border-dashed border-zinc-800 flex items-center justify-center h-16 text-xs text-zinc-700"
+          <!-- Inline add-ticket card (first column only) -->
+          <button
+            v-if="col === allColumns[0]"
+            class="mt-2 flex w-full cursor-pointer items-center gap-2 rounded-lg border border-dashed border-zinc-800 px-3 py-2.5 text-xs text-zinc-600 transition hover:border-zinc-600 hover:text-zinc-400"
+            @click="newTicketDefaultStatusId = col.id ?? undefined; showNewTicketModal = true"
           >
-            Drop here
-          </div>
+            <span class="text-sm leading-none">+</span> Add ticket
+          </button>
+
         </div>
       </div>
     </template>
@@ -289,6 +307,18 @@ onMounted(async () => {
       :project-id="projectId"
       :topic-id="drawerTicket?.topicId ?? ''"
       @close="drawerTicket = null"
+    />
+
+    <!-- New ticket modal (kanban context — includes topic picker) -->
+    <NewTicketModal
+      :open="showNewTicketModal"
+      :project-id="projectId"
+      topic-id=""
+      :topics="topics"
+      :statuses="statuses"
+      :default-status-id="newTicketDefaultStatusId"
+      @close="showNewTicketModal = false"
+      @created="onTicketCreated"
     />
 
     <NewProjectModal
